@@ -108,7 +108,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                         'Welcome Back!',
                         style: theme.textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.onBackground,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 8),

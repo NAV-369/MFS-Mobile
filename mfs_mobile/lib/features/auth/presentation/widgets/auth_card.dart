@@ -9,14 +9,14 @@ class AuthCard extends StatelessWidget {
   final bool isLoading;
 
   const AuthCard({
-    Key? key,
+    super.key,
     required this.child,
     required this.title,
     this.subtitle,
     this.footer,
     this.elevation = 2,
     this.isLoading = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

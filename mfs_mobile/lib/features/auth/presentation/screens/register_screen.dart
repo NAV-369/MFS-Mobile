@@ -205,7 +205,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                             'Verify your identity to complete registration',
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w600,
-                              color: theme.colorScheme.onBackground,
+                              color: theme.colorScheme.onSurface,
                             ),
                           ),
                         ),
@@ -218,7 +218,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                     'Upload National ID',
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.onBackground,
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 8),

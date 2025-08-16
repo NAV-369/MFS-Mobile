@@ -5,7 +5,6 @@ import '../../features/splash/presentation/splash_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
 
-
 class AppRouter {
   late final GoRouter router;
 

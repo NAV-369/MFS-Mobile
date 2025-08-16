@@ -1,35 +1,52 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  static final lightTheme = ThemeData(
-    primarySwatch: Colors.blue,
-    scaffoldBackgroundColor: Colors.white,
+  static final ThemeData darkTheme = ThemeData(
+    brightness: Brightness.dark,
+    scaffoldBackgroundColor: Colors.black,
+    primaryColor: Colors.white,
+    fontFamily: '.SF Pro', // system font on iOS
     textTheme: const TextTheme(
-      headlineMedium: TextStyle(
-        fontSize: 24,
+      bodyLarge: TextStyle(color: Colors.white),
+      bodyMedium: TextStyle(color: Colors.white70),
+      titleLarge: TextStyle(
+        color: Colors.white,
         fontWeight: FontWeight.bold,
-        color: Colors.black,
-      ),
-      bodyMedium: TextStyle(
-        fontSize: 16,
-        color: Colors.black87,
+        fontSize: 20,
       ),
     ),
-  );
-
-  static final darkTheme = ThemeData(
-    brightness: Brightness.dark,
-    primarySwatch: Colors.blue,
-    scaffoldBackgroundColor: Colors.black,
-    textTheme: const TextTheme(
-      headlineMedium: TextStyle(
-        fontSize: 24,
-        fontWeight: FontWeight.bold,
+    appBarTheme: const AppBarTheme(
+      backgroundColor: Colors.black,
+      elevation: 0,
+      titleTextStyle: TextStyle(
+        fontFamily: '.SF Pro',
         color: Colors.white,
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
       ),
-      bodyMedium: TextStyle(
-        fontSize: 16,
-        color: Colors.white70,
+      iconTheme: IconThemeData(color: Colors.white),
+    ),
+    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+      backgroundColor: Colors.black,
+      selectedItemColor: Colors.white,
+      unselectedItemColor: Colors.white70,
+      type: BottomNavigationBarType.fixed,
+    ),
+    cardTheme: CardThemeData(
+      color: Colors.grey.shade900,
+      elevation: 4,
+      shadowColor: Colors.black54,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.deepPurpleAccent,
+        foregroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
       ),
     ),
   );

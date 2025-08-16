@@ -1,6 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'dart:async';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -9,23 +9,61 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
+  double logoScale = 0.6;
+
   @override
   void initState() {
     super.initState();
-    // Navigate to login after 2 seconds
-    Timer(const Duration(seconds: 2), () {
-      context.go('/login');
+
+    // Animate logo scale slightly after build
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        setState(() {
+          logoScale = 1.0;
+        });
+      }
+    });
+
+    // Navigate to Login after 2.5 seconds using GoRouter
+    Timer(const Duration(milliseconds: 2500), () {
+      if (mounted) {
+        context.go('/login');
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: Text(
-          'Splash screen',
-          style: Theme.of(context).textTheme.headlineMedium,
+      backgroundColor: Colors.black, // Wallet-style dark background
+      body: SafeArea(
+        child: Center(
+          child: AnimatedScale(
+            scale: logoScale,
+            duration: const Duration(milliseconds: 800),
+            curve: Curves.easeOutBack,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Icon(
+                  Icons.account_balance_wallet,
+                  color: Colors.white,
+                  size: 80,
+                ),
+                SizedBox(height: 20),
+                Text(
+                  'Microfinance App',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

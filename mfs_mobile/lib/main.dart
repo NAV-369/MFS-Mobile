@@ -17,13 +17,13 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Initialize router
-    final _router = AppRouter().router;
+    final appRouterInstance = AppRouter().router; // renamed variable
 
     return MaterialApp.router(
       title: 'MFS Mobile',
-      theme: AppTheme.lightTheme,
+      theme: AppTheme.darkTheme,
       debugShowCheckedModeBanner: false,
-      routerConfig: _router,
+      routerConfig: appRouterInstance,
     );
   }
 }

@@ -7,12 +7,12 @@ class LoanCard extends StatelessWidget {
   final int overdueLoans;
 
   const LoanCard({
-    Key? key,
+    super.key,
     required this.totalLoans,
     required this.activeLoans,
     required this.repaymentProgress,
     required this.overdueLoans,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +26,33 @@ class LoanCard extends StatelessWidget {
           children: [
             const Text(
               "Loan Portfolio Overview",
-              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold),
+            ),
+             const SizedBox(height: 12),
+            const Text(
+              "Repayment Progress",
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500),
+            ),
+             const SizedBox(height: 4),
+            Text(
+              "${(repaymentProgress * 100).toStringAsFixed(1)}% Completed",
+              style: const TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+            const SizedBox(height: 6),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: LinearProgressIndicator(
+                value: repaymentProgress,
+                backgroundColor: Colors.white12,
+                color: Colors.greenAccent,
+                minHeight: 8,
+              ),
             ),
             const SizedBox(height: 12),
             Text(
@@ -41,24 +67,8 @@ class LoanCard extends StatelessWidget {
               "Overdue Loans: $overdueLoans",
               style: const TextStyle(color: Colors.redAccent, fontSize: 16),
             ),
-            const SizedBox(height: 12),
-            const Text(
-              "Repayment Progress",
-              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 6),
-            LinearProgressIndicator(
-              value: repaymentProgress,
-              backgroundColor: Colors.white12,
-              color: Colors.greenAccent,
-              minHeight: 8,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              "${(repaymentProgress * 100).toStringAsFixed(1)}% Completed",
-              style: const TextStyle(color: Colors.white70, fontSize: 14),
-            ),
+           
+           
           ],
         ),
       ),

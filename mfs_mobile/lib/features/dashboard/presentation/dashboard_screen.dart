@@ -1,215 +1,304 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/widgets/dashboard_card.dart';
-import '../../../core/widgets/mini_bar_chart.dart';
 import '../../../core/widgets/income_expense_card.dart';
 import '../../../core/widgets/loan_card.dart';
-import '../../../features/ai/domain/ai_service.dart';
-import '../../../features/finance/domain/finance_providers.dart';
+import '../../../core/providers/data_providers.dart';
+import '../../../core/providers/auth_provider.dart';
+import 'package:mfs_mobile/features/ai/ai_chatbot_widget.dart';
 
-class DashboardScreen extends ConsumerWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final spendingPrediction = ref.watch(aiSpendingPredictionProvider);
-    final loanPrediction = ref.watch(aiLoanPredictionProvider);
-    final income = ref.watch(monthlyIncomeProvider);
-    final expenses = ref.watch(monthlyExpensesProvider);
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen>
+    with SingleTickerProviderStateMixin {
+  bool _showChatbot = false;
+  final bool _showNotification = false;
+  final String _notificationText = '';
+  final Color _notificationColor = Colors.green;
+
+  late final AnimationController _controller;
+  late final Animation<double> _fadeAnimation;
+  late final Animation<Offset> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Chatbot animation controller
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _fadeAnimation = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
+    _slideAnimation = Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
+        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  void _toggleChatbot() {
+    setState(() => _showChatbot = !_showChatbot);
+    if (_showChatbot) {
+      _controller.forward();
+    } else {
+      _controller.reverse();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final authState = ref.watch(authProvider);
+    final dashboardSummary = ref.watch(dashboardSummaryProvider);
+    final balance = ref.watch(balanceProvider);
+
+    // Redirect to login if not authenticated
+    if (!authState.isAuthenticated) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.go('/login');
+      });
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final double topPadding = MediaQuery.of(context).padding.top + kToolbarHeight;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6FA),
+      backgroundColor: Colors.black,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Dashboard'),
-        backgroundColor: Colors.deepPurpleAccent,
+        title: Text(
+          'Welcome, ${authState.user?.username ?? "User"}',
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
+        ),
+        backgroundColor: Colors.transparent,    
         elevation: 0,
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings, color: Colors.white),
+            onPressed: () => context.push('/profile'),
+          ),
+        ],
       ),
-      body: SafeArea(
-        bottom: false, // bottom handled separately
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 1. AI Insights
-              Card(
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20)),
-                color: Colors.deepPurpleAccent,
-                elevation: 6,
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(16, topPadding + 8, 16, 140),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Notification banner
+                if (_showNotification)
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: _notificationColor,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.info, color: Colors.white),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _notificationText,
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                // AI Chatbot Card
+                InkWell(
+                  onTap: _toggleChatbot,
+                  child: _glassCard(
+                    child: const Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          'AI Assistant',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'Hello! I am your AI assistant. Tap here to chat.',
+                          style: TextStyle(color: Colors.white70, fontSize: 16),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                // Dashboard Cards Grid
+                dashboardSummary.when(
+                  data: (summary) => GridView.count(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    childAspectRatio: 1.35,
                     children: [
-                      const Text(
-                        'AI Insights',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                      DashboardCard(
+                        title: 'Balance',
+                        value: '\$${summary.totalBalance.toStringAsFixed(2)}',
+                        startColor: Colors.tealAccent.shade700,
+                        endColor: Colors.green.shade700,
+                        icon: Icons.account_balance_wallet,
+                        onTap: () => context.push('/balance'),
                       ),
-                      const SizedBox(height: 12),
-                      spendingPrediction.when(
-                        data: (value) => Text(
-                          'Recommended spending this month: \$${value.toStringAsFixed(0)}',
-                          style: const TextStyle(
-                              color: Colors.white, fontSize: 16),
-                        ),
-                        loading: () => const Center(
-                            child: CircularProgressIndicator(
-                                color: Colors.white)),
-                        error: (err, stack) => const Text(
-                            'Error fetching spending prediction',
-                            style: TextStyle(color: Colors.white)),
+                      DashboardCard(
+                        title: 'Active Loans',
+                        value: '${summary.activeLoans}',
+                        startColor: Colors.redAccent.shade700,
+                        endColor: Colors.red.shade400,
+                        icon: Icons.attach_money,
+                        onTap: () => context.push('/loans'),
                       ),
-                      const SizedBox(height: 8),
-                      loanPrediction.when(
-                        data: (value) => Text(
-                          'Loan Prediction: \$${double.tryParse(value) ?? 0}',
-                          style: const TextStyle(
-                              color: Colors.white, fontSize: 16),
-                        ),
-                        loading: () => const Center(
-                            child: CircularProgressIndicator(
-                                color: Colors.white)),
-                        error: (err, stack) => const Text(
-                            'Error fetching loan prediction',
-                            style: TextStyle(color: Colors.white)),
+                      DashboardCard(
+                        title: 'Transactions',
+                        value: '${summary.totalTransactions}',
+                        startColor: Colors.lightBlueAccent.shade700,
+                        endColor: Colors.blue.shade400,
+                        icon: Icons.receipt_long,
+                        onTap: () => context.push('/transactions'),
                       ),
                     ],
                   ),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // 2. Dashboard Cards
-              GridView.count(
-                crossAxisCount: 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                childAspectRatio: 1.35,
-                children: [
-                  DashboardCard(
-                    title: 'Balance',
-                    value: '\$12,450',
-                    startColor: Colors.tealAccent.shade700,
-                    endColor: Colors.green.shade700,
-                    icon: Icons.account_balance_wallet,
-                    onTap: () {},
+                  loading: () => const SizedBox(
+                    height: 200,
+                    child: Center(child: CircularProgressIndicator()),
                   ),
-                  DashboardCard(
-                    title: 'Loans',
-                    value: '\$3,200',
-                    startColor: Colors.redAccent.shade700,
-                    endColor: Colors.red.shade400,
-                    icon: Icons.attach_money,
-                    onTap: () {},
-                  ),
-                  DashboardCard(
-                    title: 'Savings',
-                    value: '\$7,500',
-                    startColor: Colors.lightBlueAccent.shade700,
-                    endColor: Colors.blue.shade400,
-                    icon: Icons.savings,
-                    onTap: () {},
-                  ),
-                  DashboardCard(
-                    title: 'Credit Score',
-                    value: '720',
-                    startColor: Colors.orange.shade600,
-                    endColor: Colors.deepOrange.shade400,
-                    icon: Icons.star,
-                    onTap: () {},
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              // 3. Loan Card
-              LoanCard(
-                totalLoans: 125000.00,
-                activeLoans: 48,
-                repaymentProgress: 0.73,
-                overdueLoans: 5,
-              ),
-              const SizedBox(height: 24),
-
-              // 4. Income vs Expenses
-              const Text(
-                'Income vs Expenses',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              IncomeExpenseCard(
-                income: income.asData?.value ?? 0,
-                expenses: expenses.asData?.value ?? 0,
-              ),
-              const SizedBox(height: 24),
-
-              // 5. Mini Bar Chart
-              const Text(
-                'Spending Trends',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 140,
-                child: MiniBarChart(
-                  values: [10, 20, 15, 25, 18, 30, 22],
-                  barColor: Colors.deepPurpleAccent,
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // 6. Recent Transactions
-              const Text(
-                'Recent Transactions',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: 5,
-                itemBuilder: (context, index) {
-                  bool flaggedByAI = index % 2 == 0;
-                  return ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor:
-                          flaggedByAI ? Colors.redAccent : Colors.blueAccent,
-                      child: const Icon(Icons.monetization_on,
-                          color: Colors.white),
+                  error: (error, stack) => Container(
+                    height: 200,
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error, color: Colors.redAccent, size: 48),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Failed to load dashboard data',
+                          style: const TextStyle(color: Colors.redAccent),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        ElevatedButton(
+                          onPressed: () => ref.refresh(dashboardSummaryProvider),
+                          child: const Text('Retry'),
+                        ),
+                      ],
                     ),
-                    title: Text('Transaction #${index + 1}'),
-                    subtitle: const Text('Details of transaction'),
-                    trailing: flaggedByAI
-                        ? const Icon(Icons.warning, color: Colors.red)
-                        : Text('\$${(index + 1) * 50}'),
-                  );
-                },
-              ),
-              const SizedBox(height: 16), // extra spacing for bottom menu
-            ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Income vs Expenses
+                const _SectionTitle(title: 'Monthly Overview'),
+                const SizedBox(height: 8),
+                dashboardSummary.when(
+                  data: (summary) => _glassCard(
+                    child: IncomeExpenseCard(
+                      income: summary.monthlyIncome,
+                      expenses: summary.monthlyExpenses,
+                    ),
+                  ),
+                  loading: () => _glassCard(
+                    child: const SizedBox(
+                      height: 120,
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                  ),
+                  error: (_, __) => _glassCard(
+                    child: const SizedBox(
+                      height: 120,
+                      child: Center(
+                        child: Text(
+                          'Failed to load monthly data',
+                          style: TextStyle(color: Colors.redAccent),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
           ),
-        ),
+
+          // AI Chatbot overlay
+          if (_showChatbot)
+            FadeTransition(
+              opacity: _fadeAnimation,
+              child: GestureDetector(
+                onTap: _toggleChatbot,
+                child: Container(
+                  color: Colors.black54,
+                  child: Align(
+                    alignment: Alignment.bottomCenter,
+                    child: SlideTransition(
+                      position: _slideAnimation,
+                      child: SafeArea(
+                        child: Container(
+                          margin: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.white.withOpacity(0.2)),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.4),
+                                blurRadius: 12,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          height: MediaQuery.of(context).size.height * 0.55,
+                          child: const AIChatbotWidget(),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
 
-      // 7. Bottom Static Menu Bar
       bottomNavigationBar: SafeArea(
         top: false,
         child: Container(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+          margin: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Colors.white.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: Colors.white.withOpacity(0.2)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.12),
-                blurRadius: 12,
-                offset: const Offset(0, -4),
+                color: Colors.black.withOpacity(0.4),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
               ),
             ],
           ),
@@ -220,26 +309,62 @@ class DashboardScreen extends ConsumerWidget {
                   icon: Icons.attach_money,
                   label: 'Deposit',
                   color: Colors.green,
-                  onTap: () {}),
+                  onTap: () => context.push('/deposit')),
               _QuickActionButton(
                   icon: Icons.swap_horiz,
                   label: 'Transfer',
                   color: Colors.blue,
-                  onTap: () {}),
+                  onTap: () => context.push('/transfer')),
               _QuickActionButton(
-                  icon: Icons.request_page,
-                  label: 'Loan',
+                  icon: Icons.money_off,
+                  label: 'Withdraw',
                   color: Colors.orange,
-                  onTap: () {}),
+                  onTap: () => context.push('/withdraw')),
             ],
           ),
         ),
       ),
     );
   }
+
+  Widget _glassCard({required Widget child}) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.4),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
 }
 
-// Quick Action Button Widget (flexible & smaller)
+class _SectionTitle extends StatelessWidget {
+  final String title;
+  const _SectionTitle({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+        color: Colors.white,
+      ),
+    );
+  }
+}
+
 class _QuickActionButton extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -255,27 +380,26 @@ class _QuickActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircleAvatar(
-              radius: 22,
-              backgroundColor: color,
-              child: Icon(icon, color: Colors.white, size: 22),
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CircleAvatar(
+            radius: 22,
+            backgroundColor: color,
+            child: Icon(icon, color: Colors.white, size: 22),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
             ),
-            const SizedBox(height: 4),
-            FittedBox(
-              child: Text(
-                label,
-                style: const TextStyle(
-                    fontSize: 12, fontWeight: FontWeight.w500),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
